@@ -3,6 +3,7 @@
 
 # Client manifest file
 
+loader.entrypoint = "file:{{ gramine.libos }}"
 libos.entrypoint = "/client"
 
 loader.log_level = "{{ log_level }}"
@@ -25,19 +26,20 @@ fs.mounts = [
 ]
 
 sys.enable_extra_runtime_domain_names_conf = true
-
+sgx.remote_attestation = "dcap"
 sgx.debug = true
 sgx.edmm_enable = {{ 'true' if env.get('EDMM', '0') == '1' else 'false' }}
 sgx.enclave_size = "512M"
 sgx.max_threads = {{ '1' if env.get('EDMM', '0') == '1' else '4' }}
 
 sgx.trusted_files = [
+  "file:{{ gramine.libos }}",
   "file:client",
   "file:{{ gramine.runtimedir() }}/",
   "file:/usr/local/lib/",
   "file:{{ arch_libdir }}/",
   "file:/usr{{ arch_libdir }}/",
-  "file:ssl/ca.crt",
+  "file:ssl/ca.crt"
 ]
 
 sgx.allowed_files = [
@@ -51,3 +53,4 @@ sgx.allowed_files = [
   "file:/etc/ssl/certs/ca-certificates.crt",
   "file:/etc/sgx_default_qcnl.conf",
 ]
+

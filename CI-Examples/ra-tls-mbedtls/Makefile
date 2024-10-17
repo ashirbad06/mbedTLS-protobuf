@@ -48,10 +48,10 @@ CFLAGS += $(shell pkg-config --cflags mbedtls_gramine) \
 # no need for `pkg-config --libs ra_tls_gramine` because programs use dlopen
 LDFLAGS += -ldl -Wl,--enable-new-dtags $(shell pkg-config --libs mbedtls_gramine)
 
-server: src/server.c
+server: src2/server.c
 	$(CC) $< $(CFLAGS) $(LDFLAGS) -o $@
 
-client: src/client.c
+client: src2/client.c
 	$(CC) $< $(CFLAGS) $(LDFLAGS) -o $@
 
 ############################### SERVER MANIFEST ###############################

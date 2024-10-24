@@ -42,6 +42,8 @@ sgx.trusted_files = [
   "file:ssl/ca.crt",
   "file:ssl/server.crt",
   "file:ssl/server.key",
+  "file:src1/secretsharing.pb-c.c",
+  "file:src1/secretsharing.pb-c.h",
 ]
 
 sgx.allowed_files = [

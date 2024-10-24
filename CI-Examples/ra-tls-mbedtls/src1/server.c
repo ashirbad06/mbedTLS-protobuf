@@ -19,6 +19,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include "secretsharing.pb-c.h"
 
 #include "mbedtls/build_info.h"
 #define mbedtls_fprintf fprintf
@@ -51,7 +52,7 @@
 #define MBEDTLS_EXIT_SUCCESS EXIT_SUCCESS
 #define MBEDTLS_EXIT_FAILURE EXIT_FAILURE
 #define DEBUG_LEVEL          0
-
+#define MAX_MSG_SIZE 1024
 #define CA_CRT_PATH "ssl/ca.crt"
 // edited
 // edited ash06
@@ -507,7 +508,8 @@ reset:
 
     mbedtls_printf("  . Performing the SSL/TLS handshake...");
     fflush(stdout);
-
+    // Send over the SSL channel
+   
     while ((ret = mbedtls_ssl_handshake(&ssl)) != 0) {
         printf("Entered server the while loop of handshake");
         fflush(stdout);
@@ -539,7 +541,66 @@ reset:
     }
 
     mbedtls_printf(" ok\n");
+    PlayerInfo msg = PLAYER_INFO__INIT;
+    msg.kii_job_id = 1; // Example initialization
+    msg.player_number = 42; // Example initialization
+    
+    // Buffer for serialized data
+    unsigned lent = player_info__get_packed_size(&msg);
+    if (lent == 0) {
+        fprintf(stderr, "Packing or serialization error\n");
+    }
 
+    void *buff = malloc(lent);
+    if (!buff) {
+        fprintf(stderr, "Memory allocation error\n");
+    }
+
+    player_info__pack(&msg, buff);
+    fprintf(stderr, "Writing %d serialized bytes\n", lent);
+    mbedtls_ssl_write(&ssl, buff, lent);
+
+    //code for macshares and reading
+    uint8_t buffer[MAX_MSG_SIZE];
+    size_t msg_len = mbedtls_ssl_read(&ssl, buffer, sizeof(buffer));
+    
+    if (msg_len <= 0) {
+        fprintf(stderr, "SSL read error: %ld\n", msg_len);
+    }
+    MacShare *message;
+    message = mac_share__unpack(NULL, msg_len, buffer);
+    if (message == NULL) {
+        fprintf(stderr, "Error unpacking incoming message\n");
+    }
+
+    // Display the message's fields
+    printf("Received: mackeyshare_2=%s", message->mackeyshare_2); // required field
+    printf("  mackeyshare_p=%s\n", message->mackeyshare_p);
+    printf("  seeds=%s\n", message->seeds);
+    // Free the unpacked message
+    mac_share__free_unpacked(message, NULL);
+
+
+//code for sending the macshares and seed values from the server to client side 
+
+    MacShare macmessage = MAC_SHARE__INIT;
+    macmessage.mackeyshare_2 = "f0cf6099e629fd0bda2de3f9515ab72b";
+    macmessage.mackeyshare_p = "-88222337191559387830816715872691188861";
+    macmessage.seeds = "adedefwklrewernfserver";
+    unsigned lenth = mac_share__get_packed_size(&macmessage);
+    if(lenth == 0){
+        fprintf(stderr, "packing or serialization error");
+    }
+    void *macbuffer = malloc(lenth);
+    if (!macbuffer) {
+        fprintf(stderr, "Memory allocation error\n");
+    }
+
+    mac_share__pack(&macmessage, macbuffer);
+    fprintf(stderr, "Writing %d serialized bytes\n", lenth);
+    mbedtls_ssl_write(&ssl, macbuffer, lenth);
+
+    //pack
     mbedtls_printf("  . Verifying peer X.509 certificate...");
 
     flags = mbedtls_ssl_get_verify_result(&ssl);
@@ -554,7 +615,7 @@ reset:
     } else {
         mbedtls_printf(" ok\n");
     }
-
+    
     mbedtls_printf("  < Read from client:");
     fflush(stdout);
 
@@ -585,7 +646,7 @@ reset:
         }
 
         len = ret;
-        mbedtls_printf(" %lu bytes read\n\n%s", len, (char*)buf);
+        mbedtls_printf(" %ld bytes read\n\n%s", len, (char*)buf);
 
         if (ret > 0)
             break;
@@ -609,7 +670,7 @@ reset:
     }
 
     len = ret;
-    mbedtls_printf(" %lu bytes written\n\n%s\n", len, (char*)buf);
+    mbedtls_printf(" %ld bytes written\n\n%s\n", len, (char*)buf);
 
     fflush(stdout);
 

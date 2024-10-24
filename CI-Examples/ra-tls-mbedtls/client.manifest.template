@@ -39,7 +39,9 @@ sgx.trusted_files = [
   "file:/usr/local/lib/",
   "file:{{ arch_libdir }}/",
   "file:/usr{{ arch_libdir }}/",
-  "file:ssl/ca.crt"
+  "file:ssl/ca.crt",
+  "file:src1/secretsharing.pb-c.c",
+  "file:src1/secretsharing.pb-c.h",
 ]
 
 sgx.allowed_files = [

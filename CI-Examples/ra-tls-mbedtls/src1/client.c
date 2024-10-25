@@ -61,8 +61,8 @@ void (*ra_tls_set_measurement_callback_f)(int (*f_cb)(const char* mrenclave, con
 #define GET_REQUEST "GET / HTTP/1.0\r\n\r\n"
 #define MAX_MSG_SIZE 1024
 #define DEBUG_LEVEL 0
-#define KII_JOB_ID 1
-#define PLAYER_NUMBER 42
+// #define KII_JOB_ID 1
+// #define PLAYER_NUMBER 42
 
 static void my_debug(void* ctx, int level, const char* file, int line, const char* str) {
     ((void)level);
@@ -92,14 +92,14 @@ static ssize_t file_read(const char* path, char* buf, size_t count) {
 }
 //***$$$***
 
-int verify_details(int kii_job_id,int player_number){
-    if(kii_job_id == KII_JOB_ID && player_number == PLAYER_NUMBER){
-        return 0;
-    }
-    else{
-        return -1;
-    }
-}
+// int verify_details(int kii_job_id,int player_number){
+//     if(kii_job_id == KII_JOB_ID && player_number == PLAYER_NUMBER){
+//         return 0;
+//     }
+//     else{
+//         return -1;
+//     }
+// }
 
 static int parse_hex(const char* hex, void* buffer, size_t buffer_size) {
     if (strlen(hex) != buffer_size * 2)
@@ -185,8 +185,8 @@ int main(int argc, char** argv) {
     unsigned char buf[1024];
     const char* pers = "ssl_client1";
 
-    PlayerInfo *msg;
-    uint8_t buff[MAX_MSG_SIZE];
+    // PlayerInfo *msg;
+    // uint8_t buff[MAX_MSG_SIZE];
     // size_t msg_len = read_buffer (MAX_MSG_SIZE, buff);
     char* error;    
     void* ra_tls_verify_lib                                          = NULL;
@@ -517,29 +517,24 @@ int main(int argc, char** argv) {
 
     len = sprintf((char*)buf, GET_REQUEST);
 
-    size_t msg_len = mbedtls_ssl_read(&ssl, buff, sizeof(buff));
+    PlayerInfo msg = PLAYER_INFO__INIT;
+    msg.kii_job_id = 1; // Example initialization
+    msg.player_number = 42; // Example initialization
     
-    if (msg_len <= 0) {
-        fprintf(stderr, "SSL read error: %ld\n", msg_len);
+    // Buffer for serialized data
+    unsigned playlen = player_info__get_packed_size(&msg);
+    if (playlen == 0) {
+        fprintf(stderr, "Packing or serialization error\n");
     }
 
-    msg = player_info__unpack(NULL, msg_len, buff);
-    if (msg == NULL) {
-        fprintf(stderr, "Error unpacking incoming message\n");
+    void *buff = malloc(playlen);
+    if (!buff) {
+        fprintf(stderr, "Memory allocation error\n");
     }
 
-    // Display the message's fields
-    printf("Received: kii_job_id=%d", msg->kii_job_id); // required field
-    printf("  player_number=%d\n", msg->player_number);
-    int returncode = verify_details(msg->kii_job_id,msg->player_number);
-    if(returncode == -1){
-        int rcd = mbedtls_ssl_close_notify(&ssl);
-        while(rcd < 0){
-            rcd = mbedtls_ssl_close_notify(&ssl);
-        }
-    }
-    // Free the unpacked message
-    player_info__free_unpacked(msg, NULL);
+    player_info__pack(&msg, buff);
+    fprintf(stderr, "Writing %d serialized bytes\n", playlen);
+    mbedtls_ssl_write(&ssl, buff, playlen);
 
 //code for packing the macshares and sending over the TLS dconnection again to the server
     MacShare message = MAC_SHARE__INIT;

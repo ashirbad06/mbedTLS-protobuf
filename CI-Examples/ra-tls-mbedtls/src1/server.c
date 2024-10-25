@@ -53,6 +53,8 @@
 #define MBEDTLS_EXIT_FAILURE EXIT_FAILURE
 #define DEBUG_LEVEL          0
 #define MAX_MSG_SIZE 1024
+#define KII_JOB_ID 1
+#define PLAYER_NUMBER 42
 #define CA_CRT_PATH "ssl/ca.crt"
 // edited
 // edited ash06
@@ -83,6 +85,16 @@ static int parse_hex(const char* hex, void* buffer, size_t buffer_size) {
     }
     return 0;
 }
+
+int verify_details(int kii_job_id,int player_number){
+   if(kii_job_id == KII_JOB_ID && player_number == PLAYER_NUMBER){
+       return 0;
+   }
+   else{
+       return -1;
+   }
+}
+
 // edited
 static ssize_t file_read(const char* path, char* buf, size_t count) {
     FILE* f = fopen(path, "r");
@@ -541,24 +553,33 @@ reset:
     }
 
     mbedtls_printf(" ok\n");
-    PlayerInfo msg = PLAYER_INFO__INIT;
-    msg.kii_job_id = 1; // Example initialization
-    msg.player_number = 42; // Example initialization
-    
-    // Buffer for serialized data
-    unsigned lent = player_info__get_packed_size(&msg);
-    if (lent == 0) {
-        fprintf(stderr, "Packing or serialization error\n");
+    PlayerInfo *msg;
+    uint8_t buff[MAX_MSG_SIZE];
+    size_t play_len = mbedtls_ssl_read(&ssl, buff, sizeof(buff));
+  
+    if (play_len <= 0) {
+        fprintf(stderr, "SSL read error: %ld\n", play_len);
     }
 
-    void *buff = malloc(lent);
-    if (!buff) {
-        fprintf(stderr, "Memory allocation error\n");
+
+    msg = player_info__unpack(NULL, play_len, buff);
+    if (msg == NULL) {
+        fprintf(stderr, "Error unpacking incoming message\n");
     }
 
-    player_info__pack(&msg, buff);
-    fprintf(stderr, "Writing %d serialized bytes\n", lent);
-    mbedtls_ssl_write(&ssl, buff, lent);
+
+    // Display the message's fields
+    printf("Received: kii_job_id=%d", msg->kii_job_id); // required field
+    printf("  player_number=%d\n", msg->player_number);
+    int returncode = verify_details(msg->kii_job_id,msg->player_number);
+    if(returncode == -1){
+        printf("KII_JOB_ID or PLAYER_ID not valid.\n");
+        int rcd = mbedtls_ssl_close_notify(&ssl);
+        while(rcd < 0){
+            rcd = mbedtls_ssl_close_notify(&ssl);
+        }
+    }
+
 
     //code for macshares and reading
     uint8_t buffer[MAX_MSG_SIZE];

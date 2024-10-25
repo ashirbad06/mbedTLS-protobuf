@@ -53,8 +53,8 @@
 #define MBEDTLS_EXIT_FAILURE EXIT_FAILURE
 #define DEBUG_LEVEL          0
 #define MAX_MSG_SIZE 1024
-#define KII_JOB_ID 1
-#define PLAYER_NUMBER 42
+// #define KII_JOB_ID 1
+// #define PLAYER_NUMBER 42
 #define CA_CRT_PATH "ssl/ca.crt"
 // edited
 // edited ash06
@@ -86,8 +86,8 @@ static int parse_hex(const char* hex, void* buffer, size_t buffer_size) {
     return 0;
 }
 
-int verify_details(int kii_job_id,int player_number){
-   if(kii_job_id == KII_JOB_ID && player_number == PLAYER_NUMBER){
+int verify_details(int kii_job_id,int player_number,int kii_job_id_defined,int player_number_defined){
+   if(kii_job_id == kii_job_id_defined && player_number == player_number_defined){
        return 0;
    }
    else{
@@ -211,6 +211,34 @@ int main(int argc, char** argv) {
     mbedtls_pk_init(&pkey);
     mbedtls_entropy_init(&entropy);
     mbedtls_ctr_drbg_init(&ctr_drbg);
+
+//code for getting the environment variables inside the main function
+    const char *env_names[] = {
+        "KII_TUPLES_PER_JOB", "KII_SHARED_FOLDER", "KII_TUPLE_FILE", 
+        "KII_PLAYER_NUMBER", "KII_PLAYER_COUNT", "KII_JOB_ID", 
+        "KII_TUPLE_TYPE", "KII_PLAYER_ENDPOINT_1", "KII_PLAYER_ENDPOINT_0"
+    };
+    
+    char *env_values[sizeof(env_names) / sizeof(env_names[0])];
+
+    // Loop through each environment variable
+    for (int i = 0; i < sizeof(env_names) / sizeof(env_names[0]); i++) {
+        env_values[i] = getenv(env_names[i]);
+
+        // Check if the environment variable exists and print the appropriate message
+        if (env_values[i] == NULL) {
+            fprintf(stderr, "Error: Environment variable %s not found.\n", env_names[i]); 
+        }
+    }
+    
+    char *kii_job_id_str = env_values[5];  // KII_JOB_ID
+    char *player_number_str = env_values[3];  // KII_PLAYER_NUMBER
+    char *number_of_players_str = env_values[4];
+    // Convert to integers
+    int kii_job_id_defined = kii_job_id_str ? atoi(kii_job_id_str) : 0;  // Check for NULL first
+    int player_number_defined = player_number_str ? atoi(player_number_str) : 0;
+    int number_of_players = number_of_players_str ? atoi(number_of_players_str) : 0;
+//EOC for getting the env variables and storing them inside main fuction
 
 #if defined(MBEDTLS_DEBUG_C)
     mbedtls_debug_set_threshold(DEBUG_LEVEL);
@@ -571,7 +599,7 @@ reset:
     // Display the message's fields
     printf("Received: kii_job_id=%d", msg->kii_job_id); // required field
     printf("  player_number=%d\n", msg->player_number);
-    int returncode = verify_details(msg->kii_job_id,msg->player_number);
+    int returncode = verify_details(msg->kii_job_id,msg->player_number,kii_job_id_defined,player_number_defined);
     if(returncode == -1){
         printf("KII_JOB_ID or PLAYER_ID not valid.\n");
         int rcd = mbedtls_ssl_close_notify(&ssl);

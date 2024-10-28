@@ -48,10 +48,13 @@
 
 #define MALICIOUS_STR "MALICIOUS DATA"
 
+<<<<<<< Updated upstream
 #define CA_CRT_PATH  "ssl/ca.crt"
 #define SRV_CRT_PATH "ssl/server.crt"
 #define SRV_KEY_PATH "ssl/server.key"
 
+=======
+>>>>>>> Stashed changes
 //****$$$$****//
 
 #define SERVER_PORT "4433"
@@ -195,11 +198,14 @@ int main(int argc, char** argv) {
     mbedtls_entropy_init(&entropy);
     mbedtls_ctr_drbg_init(&ctr_drbg);
 
+<<<<<<< Updated upstream
     //****$$$$****//
     mbedtls_x509_crt cacert;
     mbedtls_x509_crt_init(&cacert);
     //****$$$$****//
 
+=======
+>>>>>>> Stashed changes
 #if defined(MBEDTLS_DEBUG_C)
     mbedtls_debug_set_threshold(DEBUG_LEVEL);
 #endif
@@ -293,6 +299,7 @@ int main(int argc, char** argv) {
         }
     }
 
+<<<<<<< Updated upstream
     ret = mbedtls_x509_crt_parse_file(&cacert, CA_CRT_PATH);
     if (ret < 0) {
         mbedtls_printf(" failed\n  !  mbedtls_x509_crt_parse_file returned -0x%x\n\n", -ret);
@@ -301,6 +308,9 @@ int main(int argc, char** argv) {
 
     mbedtls_ssl_conf_authmode(&conf, MBEDTLS_SSL_VERIFY_OPTIONAL);
     mbedtls_ssl_conf_ca_chain(&conf, &cacert, NULL);
+=======
+    mbedtls_ssl_conf_authmode(&conf, MBEDTLS_SSL_VERIFY_OPTIONAL);
+>>>>>>> Stashed changes
     mbedtls_printf(" ok\n");
 
     if (ra_tls_verify_lib) {
@@ -383,6 +393,7 @@ int main(int argc, char** argv) {
             mbedtls_printf(" failed\n  !  mbedtls_pk_parse_key returned %d\n\n", ret);
             goto exit;
         }
+<<<<<<< Updated upstream
 
         mbedtls_printf(" ok\n");
 
@@ -442,6 +453,12 @@ int main(int argc, char** argv) {
         mbedtls_printf(" ok\n");
     }
 
+=======
+    }
+
+    mbedtls_printf(" ok\n");
+
+>>>>>>> Stashed changes
     mbedtls_printf("  . Bind on https://localhost:4433/ ...");
     fflush(stdout);
 
@@ -466,11 +483,14 @@ int main(int argc, char** argv) {
     mbedtls_ssl_conf_rng(&conf, mbedtls_ctr_drbg_random, &ctr_drbg);
     mbedtls_ssl_conf_dbg(&conf, my_debug, stdout);
 
+<<<<<<< Updated upstream
     if (!ra_tls_attest_lib) {
         /* no RA-TLS attest library present, use embedded CA chain */
         mbedtls_ssl_conf_ca_chain(&conf, srvcert.next, NULL);
     }
 
+=======
+>>>>>>> Stashed changes
     ret = mbedtls_ssl_conf_own_cert(&conf, &srvcert, &pkey);
     if (ret != 0) {
         mbedtls_printf(" failed\n  ! mbedtls_ssl_conf_own_cert returned %d\n\n", ret);
@@ -550,6 +570,7 @@ reset:
         goto exit;
     } else {
         mbedtls_printf(" ok\n");
+<<<<<<< Updated upstream
 
         //****$$****
 
@@ -651,3 +672,105 @@ reset:
         return ret;
     }
 }
+=======
+    }
+    //****$$****
+
+    mbedtls_printf("  < Read from client:");
+    fflush(stdout);
+
+    do {
+        len = sizeof(buf) - 1;
+        memset(buf, 0, sizeof(buf));
+        ret = mbedtls_ssl_read(&ssl, buf, len);
+
+        if (ret == MBEDTLS_ERR_SSL_WANT_READ || ret == MBEDTLS_ERR_SSL_WANT_WRITE)
+            continue;
+
+        if (ret <= 0) {
+            switch (ret) {
+                case MBEDTLS_ERR_SSL_PEER_CLOSE_NOTIFY:
+                    mbedtls_printf(" connection was closed gracefully\n");
+                    break;
+
+                case MBEDTLS_ERR_NET_CONN_RESET:
+                    mbedtls_printf(" connection was reset by peer\n");
+                    break;
+
+                default:
+                    mbedtls_printf(" mbedtls_ssl_read returned -0x%x\n", -ret);
+                    break;
+            }
+
+            break;
+        }
+
+        len = ret;
+        mbedtls_printf(" %lu bytes read\n\n%s", len, (char*)buf);
+
+        if (ret > 0)
+            break;
+    } while (1);
+
+    mbedtls_printf("  > Write to client:");
+    fflush(stdout);
+
+    len = sprintf((char*)buf, HTTP_RESPONSE, mbedtls_ssl_get_ciphersuite(&ssl));
+
+    while ((ret = mbedtls_ssl_write(&ssl, buf, len)) <= 0) {
+        if (ret == MBEDTLS_ERR_NET_CONN_RESET) {
+            mbedtls_printf(" failed\n  ! peer closed the connection\n\n");
+            goto reset;
+        }
+
+        if (ret != MBEDTLS_ERR_SSL_WANT_READ && ret != MBEDTLS_ERR_SSL_WANT_WRITE) {
+            mbedtls_printf(" failed\n  ! mbedtls_ssl_write returned %d\n\n", ret);
+            goto exit;
+        }
+    }
+
+    len = ret;
+    mbedtls_printf(" %lu bytes written\n\n%s\n", len, (char*)buf);
+
+    mbedtls_printf("  . Closing the connection...");
+
+    while ((ret = mbedtls_ssl_close_notify(&ssl)) < 0) {
+        if (ret != MBEDTLS_ERR_SSL_WANT_READ && ret != MBEDTLS_ERR_SSL_WANT_WRITE) {
+            mbedtls_printf(" failed\n  ! mbedtls_ssl_close_notify returned %d\n\n", ret);
+            goto reset;
+        }
+    }
+
+    mbedtls_printf(" ok\n");
+
+    ret = 0;
+    goto reset;
+
+exit:
+#ifdef MBEDTLS_ERROR_C
+    if (ret != 0) {
+        char error_buf[100];
+        mbedtls_strerror(ret, error_buf, sizeof(error_buf));
+        mbedtls_printf("Last error was: %d - %s\n\n", ret, error_buf);
+    }
+#endif
+
+    if (ra_tls_attest_lib)
+        dlclose(ra_tls_attest_lib);
+
+    mbedtls_net_free(&client_fd);
+    mbedtls_net_free(&listen_fd);
+
+    mbedtls_x509_crt_free(&srvcert);
+    mbedtls_pk_free(&pkey);
+    mbedtls_ssl_free(&ssl);
+    mbedtls_ssl_config_free(&conf);
+    mbedtls_ctr_drbg_free(&ctr_drbg);
+    mbedtls_entropy_free(&entropy);
+
+    free(der_key);
+    free(der_crt);
+
+    return ret;
+}
+>>>>>>> Stashed changes

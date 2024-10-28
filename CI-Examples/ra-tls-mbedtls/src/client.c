@@ -36,6 +36,7 @@
 
 #include "ra_tls.h"
 
+
 /* RA-TLS: on client, only need to register ra_tls_verify_callback_extended_der() for cert
  * verification. */
 int (*ra_tls_verify_callback_extended_der_f)(uint8_t* der_crt, size_t der_crt_size,
@@ -87,8 +88,9 @@ static bool g_verify_isv_svn     = false;
 /* RA-TLS: our own callback to verify SGX measurements */
 static int my_verify_measurements(const char* mrenclave, const char* mrsigner,
                                   const char* isv_prod_id, const char* isv_svn) {
+    mbedtls_printf("Entered 91\n");
     assert(mrenclave && mrsigner && isv_prod_id && isv_svn);
-
+    mbedtls_printf("Entered 93\n");
     if (g_verify_mrenclave &&
             memcmp(mrenclave, g_expected_mrenclave, sizeof(g_expected_mrenclave)))
         return -1;
@@ -104,7 +106,7 @@ static int my_verify_measurements(const char* mrenclave, const char* mrsigner,
     if (g_verify_isv_svn &&
             memcmp(isv_svn, g_expected_isv_svn, sizeof(g_expected_isv_svn)))
         return -1;
-
+    mbedtls_printf("Entered MVM 109\n");
     return 0;
 }
 

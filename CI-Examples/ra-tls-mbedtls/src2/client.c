@@ -62,8 +62,11 @@ void (*ra_tls_set_measurement_callback_f)(int (*f_cb)(const char* mrenclave, con
 
 #define DEBUG_LEVEL 0
 
+<<<<<<< Updated upstream
 #define CA_CRT_PATH "ssl/ca.crt"
 
+=======
+>>>>>>> Stashed changes
 static void my_debug(void* ctx, int level, const char* file, int line, const char* str) {
     ((void)level);
 
@@ -152,6 +155,7 @@ static int my_verify_callback(void* data, mbedtls_x509_crt* crt, int depth, uint
                                                  (struct ra_tls_verify_callback_results*)data);
 }
 
+<<<<<<< Updated upstream
 static bool getenv_client_inside_sgx() {
     char* str = getenv("RA_TLS_CLIENT_INSIDE_SGX");
     if (!str)
@@ -160,6 +164,8 @@ static bool getenv_client_inside_sgx() {
     return !strcmp(str, "1") || !strcmp(str, "true") || !strcmp(str, "TRUE");
 }
 
+=======
+>>>>>>> Stashed changes
 int main(int argc, char** argv) {
     int ret;
     size_t len;
@@ -168,7 +174,10 @@ int main(int argc, char** argv) {
     uint32_t flags;
     unsigned char buf[1024];
     const char* pers = "ssl_client1";
+<<<<<<< Updated upstream
     bool in_sgx      = getenv_client_inside_sgx();
+=======
+>>>>>>> Stashed changes
 
     char* error;
     void* ra_tls_verify_lib                                          = NULL;
@@ -189,7 +198,10 @@ int main(int argc, char** argv) {
     mbedtls_ctr_drbg_context ctr_drbg;
     mbedtls_ssl_context ssl;
     mbedtls_ssl_config conf;
+<<<<<<< Updated upstream
     mbedtls_x509_crt cacert;
+=======
+>>>>>>> Stashed changes
 
     //***$$$***
     mbedtls_x509_crt clicert;
@@ -204,7 +216,10 @@ int main(int argc, char** argv) {
     mbedtls_ssl_init(&ssl);
     mbedtls_ssl_config_init(&conf);
     mbedtls_ctr_drbg_init(&ctr_drbg);
+<<<<<<< Updated upstream
     mbedtls_x509_crt_init(&cacert);
+=======
+>>>>>>> Stashed changes
     mbedtls_entropy_init(&entropy);
 
     //***$$$***
@@ -410,6 +425,7 @@ int main(int argc, char** argv) {
 
     mbedtls_printf(" ok\n");
 
+<<<<<<< Updated upstream
     mbedtls_printf("  . Loading the CA root certificate ...");
     fflush(stdout);
 
@@ -421,6 +437,11 @@ int main(int argc, char** argv) {
 
     mbedtls_ssl_conf_authmode(&conf, MBEDTLS_SSL_VERIFY_OPTIONAL);
     mbedtls_ssl_conf_ca_chain(&conf, &cacert, NULL);
+=======
+    fflush(stdout);
+
+    mbedtls_ssl_conf_authmode(&conf, MBEDTLS_SSL_VERIFY_OPTIONAL);
+>>>>>>> Stashed changes
     mbedtls_printf(" ok\n");
 
     if (ra_tls_verify_lib) {
@@ -557,7 +578,10 @@ exit:
 
     mbedtls_net_free(&server_fd);
 
+<<<<<<< Updated upstream
     mbedtls_x509_crt_free(&cacert);
+=======
+>>>>>>> Stashed changes
     mbedtls_ssl_free(&ssl);
     mbedtls_ssl_config_free(&conf);
     mbedtls_ctr_drbg_free(&ctr_drbg);

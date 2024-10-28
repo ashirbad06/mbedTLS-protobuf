@@ -6,7 +6,7 @@
 #include "secret_prov.h"
 
 #define PORT "4433"
-#define SRV_CRT_PATH "../ssl/server.crt"
+#define SRV_CRT_PATH "../ssl/server.crt"//include the path to the etc/kii and store it in filepath 1 and 2
 #define SRV_KEY_PATH "../ssl/server.key"
 
 int main(void) {

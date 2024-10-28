@@ -34,11 +34,6 @@
 #include "mbedtls/x509.h"
 #include "ra_tls.h"
 
-#define HTTP_RESPONSE                                    \
-    "HTTP/1.0 200 OK\r\nContent-Type: text/html\r\n\r\n" \
-    "<h2>mbed TLS Test Server</h2>\r\n"                  \
-    "<p>Successful connection using: %s</p>\r\n"
-
 #define DEBUG_LEVEL 0
 
 #define MALICIOUS_STR "MALICIOUS DATA"
@@ -46,15 +41,13 @@
 #define CA_CRT_PATH          "ssl/ca.crt"
 #define SRV_CRT_PATH         "ssl/server.crt"
 #define SRV_KEY_PATH         "ssl/server.key"
-#define SERVER_PORT          "4433"
+#define SERVER_PORT          "4444"
 #define SERVER_NAME          "localhost"
 #define GET_REQUEST          "GET / HTTP/1.0\r\n\r\n"
 #define MBEDTLS_EXIT_SUCCESS EXIT_SUCCESS
 #define MBEDTLS_EXIT_FAILURE EXIT_FAILURE
 #define DEBUG_LEVEL          0
 #define MAX_MSG_SIZE 1024
-// #define KII_JOB_ID 1
-// #define PLAYER_NUMBER 42
 #define CA_CRT_PATH "ssl/ca.crt"
 // edited
 // edited ash06
@@ -86,15 +79,13 @@ static int parse_hex(const char* hex, void* buffer, size_t buffer_size) {
     return 0;
 }
 
-int verify_details(int kii_job_id,int player_number,int kii_job_id_defined,int player_number_defined){
-   if(kii_job_id == kii_job_id_defined && player_number == player_number_defined){
-       return 0;
-   }
-   else{
-       return -1;
-   }
+int verify_player_details(char* kii_job_id, int player_number, char* kii_job_id_defined, int player_number_defined) {
+    if (strcmp(kii_job_id, kii_job_id_defined) == 0 && player_number == player_number_defined) {
+        return 0;
+    } else {
+        return -1;
+    }
 }
-
 // edited
 static ssize_t file_read(const char* path, char* buf, size_t count) {
     FILE* f = fopen(path, "r");
@@ -171,6 +162,8 @@ static bool getenv_client_inside_sgx() {
     return !strcmp(str, "1") || !strcmp(str, "true") || !strcmp(str, "TRUE");
 }
 
+//initiate the connection and then make 
+
 int main(int argc, char** argv) {
     int ret;
     size_t len;
@@ -235,7 +228,7 @@ int main(int argc, char** argv) {
     char *player_number_str = env_values[3];  // KII_PLAYER_NUMBER
     char *number_of_players_str = env_values[4];
     // Convert to integers
-    int kii_job_id_defined = kii_job_id_str ? atoi(kii_job_id_str) : 0;  // Check for NULL first
+    //int kii_job_id_defined = kii_job_id_str ? atoi(kii_job_id_str) : 0;  // Check for NULL first
     int player_number_defined = player_number_str ? atoi(player_number_str) : 0;
     int number_of_players = number_of_players_str ? atoi(number_of_players_str) : 0;
 //EOC for getting the env variables and storing them inside main fuction
@@ -375,7 +368,7 @@ int main(int argc, char** argv) {
     if (ret == -ENOENT || !strcmp(attestation_type_str, "none")) {
         ra_tls_attest_lib               = NULL;
         ra_tls_create_key_and_crt_der_f = NULL;
-    } else if (!strcmp(attestation_type_str, "epid") || !strcmp(attestation_type_str, "dcap")) {
+    } else if (!strcmp(attestation_type_str, "dcap")) {
         ra_tls_attest_lib =
             dlopen("libra_tls_attest.so", RTLD_LAZY);  // initializing the attestation lib
         if (!ra_tls_attest_lib) {
@@ -466,7 +459,7 @@ int main(int argc, char** argv) {
     mbedtls_printf("  . Bind on https://localhost:4433/ ...");
     fflush(stdout);
 
-    ret = mbedtls_net_bind(&listen_fd, NULL, "4433", MBEDTLS_NET_PROTO_TCP);
+    ret = mbedtls_net_bind(&listen_fd, NULL, "4444", MBEDTLS_NET_PROTO_TCP);
     if (ret != 0) {
         mbedtls_printf(" failed\n  ! mbedtls_net_bind returned %d\n\n", ret);
         goto exit;
@@ -560,10 +553,6 @@ reset:
                 "    attestation_scheme=%d, err_loc=%d, \n",
                 my_verify_callback_results.attestation_scheme, my_verify_callback_results.err_loc);
             switch (my_verify_callback_results.attestation_scheme) {
-                case RA_TLS_ATTESTATION_SCHEME_EPID:
-                    mbedtls_printf("    epid.ias_enclave_quote_status=%s\n\n",
-                                   my_verify_callback_results.epid.ias_enclave_quote_status);
-                    break;
                 case RA_TLS_ATTESTATION_SCHEME_DCAP:
                     mbedtls_printf(
                         "    dcap.func_verify_quote_result=0x%x, "
@@ -581,75 +570,7 @@ reset:
     }
 
     mbedtls_printf(" ok\n");
-    PlayerInfo *msg;
-    uint8_t buff[MAX_MSG_SIZE];
-    size_t play_len = mbedtls_ssl_read(&ssl, buff, sizeof(buff));
-  
-    if (play_len <= 0) {
-        fprintf(stderr, "SSL read error: %ld\n", play_len);
-    }
 
-
-    msg = player_info__unpack(NULL, play_len, buff);
-    if (msg == NULL) {
-        fprintf(stderr, "Error unpacking incoming message\n");
-    }
-
-
-    // Display the message's fields
-    printf("Received: kii_job_id=%d", msg->kii_job_id); // required field
-    printf("  player_number=%d\n", msg->player_number);
-    int returncode = verify_details(msg->kii_job_id,msg->player_number,kii_job_id_defined,player_number_defined);
-    if(returncode == -1){
-        printf("KII_JOB_ID or PLAYER_ID not valid.\n");
-        int rcd = mbedtls_ssl_close_notify(&ssl);
-        while(rcd < 0){
-            rcd = mbedtls_ssl_close_notify(&ssl);
-        }
-    }
-
-
-    //code for macshares and reading
-    uint8_t buffer[MAX_MSG_SIZE];
-    size_t msg_len = mbedtls_ssl_read(&ssl, buffer, sizeof(buffer));
-    
-    if (msg_len <= 0) {
-        fprintf(stderr, "SSL read error: %ld\n", msg_len);
-    }
-    MacShare *message;
-    message = mac_share__unpack(NULL, msg_len, buffer);
-    if (message == NULL) {
-        fprintf(stderr, "Error unpacking incoming message\n");
-    }
-
-    // Display the message's fields
-    printf("Received: mackeyshare_2=%s", message->mackeyshare_2); // required field
-    printf("  mackeyshare_p=%s\n", message->mackeyshare_p);
-    printf("  seeds=%s\n", message->seeds);
-    // Free the unpacked message
-    mac_share__free_unpacked(message, NULL);
-
-
-//code for sending the macshares and seed values from the server to client side 
-
-    MacShare macmessage = MAC_SHARE__INIT;
-    macmessage.mackeyshare_2 = "f0cf6099e629fd0bda2de3f9515ab72b";
-    macmessage.mackeyshare_p = "-88222337191559387830816715872691188861";
-    macmessage.seeds = "adedefwklrewernfserver";
-    unsigned lenth = mac_share__get_packed_size(&macmessage);
-    if(lenth == 0){
-        fprintf(stderr, "packing or serialization error");
-    }
-    void *macbuffer = malloc(lenth);
-    if (!macbuffer) {
-        fprintf(stderr, "Memory allocation error\n");
-    }
-
-    mac_share__pack(&macmessage, macbuffer);
-    fprintf(stderr, "Writing %d serialized bytes\n", lenth);
-    mbedtls_ssl_write(&ssl, macbuffer, lenth);
-
-    //pack
     mbedtls_printf("  . Verifying peer X.509 certificate...");
 
     flags = mbedtls_ssl_get_verify_result(&ssl);
@@ -667,11 +588,14 @@ reset:
     
     mbedtls_printf("  < Read from client:");
     fflush(stdout);
-
+    PlayerInfo *msg;
+    uint8_t buff[MAX_MSG_SIZE];
+    size_t play_len;
+  
     do {
-        len = sizeof(buf) - 1;
-        memset(buf, 0, sizeof(buf));
-        ret = mbedtls_ssl_read(&ssl, buf, len);
+        play_len = sizeof(buff) - 1;
+        memset(buff, 0, sizeof(buff));
+        ret = mbedtls_ssl_read(&ssl, buff, play_len);
 
         if (ret == MBEDTLS_ERR_SSL_WANT_READ || ret == MBEDTLS_ERR_SSL_WANT_WRITE)
             continue;
@@ -694,19 +618,100 @@ reset:
             break;
         }
 
-        len = ret;
-        mbedtls_printf(" %ld bytes read\n\n%s", len, (char*)buf);
+        play_len = ret;
+        mbedtls_printf(" %ld bytes read\n\n%s", play_len, (char*)buff);
 
         if (ret > 0)
             break;
     } while (1);
 
-    mbedtls_printf("  > Write to client:");
-    fflush(stdout);
+    msg = player_info__unpack(NULL, play_len, buff);
+    if (msg == NULL) {
+        fprintf(stderr, "Error unpacking incoming message\n");
+    }
 
-    len = sprintf((char*)buf, HTTP_RESPONSE, mbedtls_ssl_get_ciphersuite(&ssl));
 
-    while ((ret = mbedtls_ssl_write(&ssl, buf, len)) <= 0) {
+    // Display the message's fields
+    printf("Received: kii_job_id=%s", msg->kii_job_id); // required field
+    printf("  player_number=%d\n", msg->player_number);
+    int returncode = verify_player_details(msg->kii_job_id,msg->player_number,kii_job_id_str,player_number_defined);
+    if(returncode == -1){
+        printf("KII_JOB_ID or PLAYER_ID not valid.\n");
+        int rcd = mbedtls_ssl_close_notify(&ssl);
+        while(rcd < 0){
+            rcd = mbedtls_ssl_close_notify(&ssl);
+        }
+    }
+
+
+    //code for macshares and reading
+    uint8_t buffer[MAX_MSG_SIZE];
+    size_t msg_len;
+    do {
+        msg_len = sizeof(buffer) - 1;
+        memset(buf, 0, sizeof(buffer));
+        ret = mbedtls_ssl_read(&ssl, buffer, msg_len);
+
+        if (ret == MBEDTLS_ERR_SSL_WANT_READ || ret == MBEDTLS_ERR_SSL_WANT_WRITE)
+            continue;
+
+        if (ret <= 0) {
+            switch (ret) {
+                case MBEDTLS_ERR_SSL_PEER_CLOSE_NOTIFY:
+                    mbedtls_printf(" connection was closed gracefully\n");
+                    break;
+
+                case MBEDTLS_ERR_NET_CONN_RESET:
+                    mbedtls_printf(" connection was reset by peer\n");
+                    break;
+
+                default:
+                    mbedtls_printf(" mbedtls_ssl_read returned -0x%x\n", -ret);
+                    break;
+            }
+
+            break;
+        }
+
+        msg_len = ret;
+        mbedtls_printf(" %ld bytes read\n\n%s", msg_len, (char*)buffer);
+
+        if (ret > 0)
+            break;
+    } while (1);
+    
+    SecretShare *message;
+    message = secret_share__unpack(NULL, msg_len, buffer);
+    if (message == NULL) {
+        fprintf(stderr, "Error unpacking incoming message\n");
+    }
+
+    // Display the message's fields
+    printf("Received: mackeyshare_2=%s", message->mackeyshare_2); // required field
+    printf("  mackeyshare_p=%s\n", message->mackeyshare_p);
+    printf("  seeds=%s\n", message->seeds);
+    // Free the unpacked message
+    secret_share__free_unpacked(message, NULL);
+
+
+//code for sending the macshares and seed values from the server to client side 
+
+    SecretShare secret_message = SECRET_SHARE__INIT;
+    secret_message.mackeyshare_2 = "f0cf6099e629fd0bda2de3f9515ab72b";
+    secret_message.mackeyshare_p = "-88222337191559387830816715872691188861";
+    secret_message.seeds = "adedefwklrewernfserver";
+    unsigned lenth = secret_share__get_packed_size(&secret_message);
+    if(lenth == 0){
+        fprintf(stderr, "packing or serialization error");
+    }
+    void *secret_buffer = malloc(lenth);
+    if (!secret_buffer) {
+        fprintf(stderr, "Memory allocation error\n");
+    }
+
+    secret_share__pack(&secret_message, secret_buffer);
+    fprintf(stderr, "Writing %d serialized bytes\n", lenth);
+    while ((ret = mbedtls_ssl_write(&ssl, secret_buffer, lenth)) <= 0) {
         if (ret == MBEDTLS_ERR_NET_CONN_RESET) {
             mbedtls_printf(" failed\n  ! peer closed the connection\n\n");
             goto reset;
@@ -718,10 +723,12 @@ reset:
         }
     }
 
-    len = ret;
-    mbedtls_printf(" %ld bytes written\n\n%s\n", len, (char*)buf);
+    lenth = ret;
+    mbedtls_printf(" %d bytes written\n\n%s\n", lenth, (char*)secret_buffer);
 
     fflush(stdout);
+
+    //pack
 
     mbedtls_printf("  . Closing the connection...");
 

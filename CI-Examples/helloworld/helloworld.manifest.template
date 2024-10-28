@@ -5,18 +5,33 @@
 
 libos.entrypoint = "/helloworld"
 loader.log_level = "{{ log_level }}"
+#loader.log_level = "debug"
 
 loader.env.LD_LIBRARY_PATH = "/lib"
 
 fs.mounts = [
   { path = "/lib", uri = "file:{{ gramine.runtimedir() }}" },
   { path = "/helloworld", uri = "file:helloworld" },
+  { path = "/etc", uri = "file:/etc" },
+ # { path = "/helloworld", uri = "file:get_env.sh" },
 ]
+#loader.entrypoint = "file:helloworld"
 
 sgx.debug = true
 sgx.edmm_enable = {{ 'true' if env.get('EDMM', '0') == '1' else 'false' }}
-
+loader.insecure__use_host_env = true
 sgx.trusted_files = [
   "file:helloworld",
   "file:{{ gramine.runtimedir() }}/",
+  #"file:output.txt",
 ]
+#loader.env_src_file = "file:/output.txt"
+#loader.env.KII_TUPLES_PER_JOB = "100000"
+#loader.env.KII_SHARED_FOLDER = "/kii"
+#loader.env.KII_TUPLE_FILE = "/kii/tuples"
+#loader.env.KII_PLAYER_NUMBER = "0"
+#loader.env.KII_PLAYER_COUNT = "2"
+#loader.env.KII_JOB_ID = "1920bb26-dsee-dzfw-vdsdsa14fds4"
+#loader.env.KII_TUPLE_TYPE = "BIT_GFP"
+#loader.env.KII_PLAYER_ENDPOINT_0 = "172.18.2.129:5000"
+#loader.env.KII_PLAYER_ENDPOINT_1 = "172.18.1.130:5000"

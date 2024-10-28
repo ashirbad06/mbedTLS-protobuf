@@ -52,49 +52,49 @@ void   player_info__free_unpacked
   assert(message->base.descriptor == &player_info__descriptor);
   protobuf_c_message_free_unpacked ((ProtobufCMessage*)message, allocator);
 }
-void   mac_share__init
-                     (MacShare         *message)
+void   secret_share__init
+                     (SecretShare         *message)
 {
-  static const MacShare init_value = MAC_SHARE__INIT;
+  static const SecretShare init_value = SECRET_SHARE__INIT;
   *message = init_value;
 }
-size_t mac_share__get_packed_size
-                     (const MacShare *message)
+size_t secret_share__get_packed_size
+                     (const SecretShare *message)
 {
-  assert(message->base.descriptor == &mac_share__descriptor);
+  assert(message->base.descriptor == &secret_share__descriptor);
   return protobuf_c_message_get_packed_size ((const ProtobufCMessage*)(message));
 }
-size_t mac_share__pack
-                     (const MacShare *message,
+size_t secret_share__pack
+                     (const SecretShare *message,
                       uint8_t       *out)
 {
-  assert(message->base.descriptor == &mac_share__descriptor);
+  assert(message->base.descriptor == &secret_share__descriptor);
   return protobuf_c_message_pack ((const ProtobufCMessage*)message, out);
 }
-size_t mac_share__pack_to_buffer
-                     (const MacShare *message,
+size_t secret_share__pack_to_buffer
+                     (const SecretShare *message,
                       ProtobufCBuffer *buffer)
 {
-  assert(message->base.descriptor == &mac_share__descriptor);
+  assert(message->base.descriptor == &secret_share__descriptor);
   return protobuf_c_message_pack_to_buffer ((const ProtobufCMessage*)message, buffer);
 }
-MacShare *
-       mac_share__unpack
+SecretShare *
+       secret_share__unpack
                      (ProtobufCAllocator  *allocator,
                       size_t               len,
                       const uint8_t       *data)
 {
-  return (MacShare *)
-     protobuf_c_message_unpack (&mac_share__descriptor,
+  return (SecretShare *)
+     protobuf_c_message_unpack (&secret_share__descriptor,
                                 allocator, len, data);
 }
-void   mac_share__free_unpacked
-                     (MacShare *message,
+void   secret_share__free_unpacked
+                     (SecretShare *message,
                       ProtobufCAllocator *allocator)
 {
   if(!message)
     return;
-  assert(message->base.descriptor == &mac_share__descriptor);
+  assert(message->base.descriptor == &secret_share__descriptor);
   protobuf_c_message_free_unpacked ((ProtobufCMessage*)message, allocator);
 }
 static const ProtobufCFieldDescriptor player_info__field_descriptors[2] =
@@ -103,11 +103,11 @@ static const ProtobufCFieldDescriptor player_info__field_descriptors[2] =
     "kii_job_id",
     1,
     PROTOBUF_C_LABEL_NONE,
-    PROTOBUF_C_TYPE_INT32,
+    PROTOBUF_C_TYPE_STRING,
     0,   /* quantifier_offset */
     offsetof(PlayerInfo, kii_job_id),
     NULL,
-    NULL,
+    &protobuf_c_empty_string,
     0,             /* flags */
     0,NULL,NULL    /* reserved1,reserved2, etc */
   },
@@ -136,7 +136,7 @@ static const ProtobufCIntRange player_info__number_ranges[1 + 1] =
 const ProtobufCMessageDescriptor player_info__descriptor =
 {
   PROTOBUF_C__MESSAGE_DESCRIPTOR_MAGIC,
-  "PlayerInfo",
+  "player_info",
   "PlayerInfo",
   "PlayerInfo",
   "",
@@ -148,7 +148,7 @@ const ProtobufCMessageDescriptor player_info__descriptor =
   (ProtobufCMessageInit) player_info__init,
   NULL,NULL,NULL    /* reserved[123] */
 };
-static const ProtobufCFieldDescriptor mac_share__field_descriptors[3] =
+static const ProtobufCFieldDescriptor secret_share__field_descriptors[3] =
 {
   {
     "mackeyshare_2",
@@ -156,7 +156,7 @@ static const ProtobufCFieldDescriptor mac_share__field_descriptors[3] =
     PROTOBUF_C_LABEL_NONE,
     PROTOBUF_C_TYPE_STRING,
     0,   /* quantifier_offset */
-    offsetof(MacShare, mackeyshare_2),
+    offsetof(SecretShare, mackeyshare_2),
     NULL,
     &protobuf_c_empty_string,
     0,             /* flags */
@@ -168,7 +168,7 @@ static const ProtobufCFieldDescriptor mac_share__field_descriptors[3] =
     PROTOBUF_C_LABEL_NONE,
     PROTOBUF_C_TYPE_STRING,
     0,   /* quantifier_offset */
-    offsetof(MacShare, mackeyshare_p),
+    offsetof(SecretShare, mackeyshare_p),
     NULL,
     &protobuf_c_empty_string,
     0,             /* flags */
@@ -180,35 +180,35 @@ static const ProtobufCFieldDescriptor mac_share__field_descriptors[3] =
     PROTOBUF_C_LABEL_NONE,
     PROTOBUF_C_TYPE_STRING,
     0,   /* quantifier_offset */
-    offsetof(MacShare, seeds),
+    offsetof(SecretShare, seeds),
     NULL,
     &protobuf_c_empty_string,
     0,             /* flags */
     0,NULL,NULL    /* reserved1,reserved2, etc */
   },
 };
-static const unsigned mac_share__field_indices_by_name[] = {
+static const unsigned secret_share__field_indices_by_name[] = {
   0,   /* field[0] = mackeyshare_2 */
   1,   /* field[1] = mackeyshare_p */
   2,   /* field[2] = seeds */
 };
-static const ProtobufCIntRange mac_share__number_ranges[1 + 1] =
+static const ProtobufCIntRange secret_share__number_ranges[1 + 1] =
 {
   { 1, 0 },
   { 0, 3 }
 };
-const ProtobufCMessageDescriptor mac_share__descriptor =
+const ProtobufCMessageDescriptor secret_share__descriptor =
 {
   PROTOBUF_C__MESSAGE_DESCRIPTOR_MAGIC,
-  "MacShare",
-  "MacShare",
-  "MacShare",
+  "secret_share",
+  "SecretShare",
+  "SecretShare",
   "",
-  sizeof(MacShare),
+  sizeof(SecretShare),
   3,
-  mac_share__field_descriptors,
-  mac_share__field_indices_by_name,
-  1,  mac_share__number_ranges,
-  (ProtobufCMessageInit) mac_share__init,
+  secret_share__field_descriptors,
+  secret_share__field_indices_by_name,
+  1,  secret_share__number_ranges,
+  (ProtobufCMessageInit) secret_share__init,
   NULL,NULL,NULL    /* reserved[123] */
 };

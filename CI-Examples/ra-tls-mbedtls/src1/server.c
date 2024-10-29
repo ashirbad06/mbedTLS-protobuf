@@ -318,7 +318,7 @@ int main(int argc, char** argv) {
             "[ using our own SGX-measurement verification callback"
             " (via command line options) ]\n");
 
-        if(player_number_defined == 0)goto client; //edited line ash06
+        
         g_verify_mrenclave   = true;
         g_verify_mrsigner    = true;
         g_verify_isv_prod_id = true;
@@ -460,7 +460,7 @@ int main(int argc, char** argv) {
 
         mbedtls_printf(" ok\n");
     }
-
+    if(player_number_defined == 0)goto client; //edited line ash06
     mbedtls_printf("  . Bind on https://localhost:4444/ ...");
     fflush(stdout);
 
@@ -760,157 +760,8 @@ client:
 //for loop for the client connection
 for(other_player_number = number_of_players-1; other_player_number >= player_number_defined+1; other_player_number--){
     //logic for client connection and secret sharing.
-    ret = file_read("/dev/attestation/attestation_type", attestation_type_str,
-                    sizeof(attestation_type_str) - 1);
-    if (ret < 0 && ret != -ENOENT) {
-        mbedtls_printf(
-            "User requested RA-TLS attestation but cannot read SGX-specific file "
-            "/dev/attestation/attestation_type\n");
-        return 1;
-    }
 
-    if (ret == -ENOENT || !strcmp(attestation_type_str, "none")) {
-        ra_tls_attest_lib               = NULL;
-        ra_tls_create_key_and_crt_der_f = NULL;
-    } else if (!strcmp(attestation_type_str, "epid") || !strcmp(attestation_type_str, "dcap")) {
-        ra_tls_attest_lib = dlopen("libra_tls_attest.so", RTLD_LAZY);
-        if (!ra_tls_attest_lib) {
-            mbedtls_printf("User requested RA-TLS attestation but cannot find lib\n");
-            return 1;
-        }
-
-        char* error;
-        ra_tls_create_key_and_crt_der_f = dlsym(ra_tls_attest_lib, "ra_tls_create_key_and_crt_der");
-        if ((error = dlerror()) != NULL) {
-            mbedtls_printf("%s\n", error);
-            return 1;
-        }
-    } else {
-        mbedtls_printf("Unrecognized remote attestation type: %s\n", attestation_type_str);
-        return 1;
-    }
-
-    //***$$$***
-
-    ra_tls_verify_lib = dlopen("libra_tls_verify_dcap_gramine.so", RTLD_LAZY);
-    if (!ra_tls_verify_lib) {
-        mbedtls_printf("%s\n", dlerror());
-        mbedtls_printf(
-            "User requested RA-TLS verification with DCAP inside SGX but cannot find "
-            "lib\n");
-        mbedtls_printf("Please make sure that you are using client_dcap.manifest\n");
-        return 1;
-    }
-
-    if (ra_tls_verify_lib) {
-        ra_tls_verify_callback_extended_der_f =
-            dlsym(ra_tls_verify_lib, "ra_tls_verify_callback_extended_der");
-        if ((error = dlerror()) != NULL) {
-            mbedtls_printf("%s\n", error);
-            return 1;
-        }
-
-        ra_tls_set_measurement_callback_f =
-            dlsym(ra_tls_verify_lib, "ra_tls_set_measurement_callback");
-        if ((error = dlerror()) != NULL) {
-            mbedtls_printf("%s\n", error);
-            return 1;
-        }
-    }
-
-    if (argc > 2 && ra_tls_verify_lib) {
-        if (argc != 5) {
-            mbedtls_printf(
-                "USAGE: %s %s <expected mrenclave> <expected mrsigner>"
-                " <expected isv_prod_id> <expected isv_svn>\n"
-                "       (first two in hex, last two as decimal; set to 0 to ignore)\n",
-                argv[1], argv[2]);
-            return 1;
-        }
-
-        mbedtls_printf(
-            "[ using our own SGX-measurement verification callback"
-            " (via command line options) ]\n");
-    }
-        g_verify_mrenclave   = true;
-        g_verify_mrsigner    = true;
-        g_verify_isv_prod_id = true;
-        g_verify_isv_svn     = true;
-
-        (*ra_tls_set_measurement_callback_f)(my_verify_measurements);
-
-        if (!strcmp(argv[1], "0")) {
-            mbedtls_printf("  - ignoring MRENCLAVE\n");
-            g_verify_mrenclave = false;
-        } else if (parse_hex(argv[1], g_expected_mrenclave, sizeof(g_expected_mrenclave)) < 0) {
-            mbedtls_printf("Cannot parse MRENCLAVE!\n");
-            return 1;
-        }
-
-        if (!strcmp(argv[2], "0")) {
-            mbedtls_printf("  - ignoring MRSIGNER\n");
-            g_verify_mrsigner = false;
-        } else if (parse_hex(argv[2], g_expected_mrsigner, sizeof(g_expected_mrsigner)) < 0) {
-            mbedtls_printf("Cannot parse MRSIGNER!\n");
-            return 1;
-        }
-
-        if (!strcmp(argv[3], "0")) {
-            mbedtls_printf("  - ignoring ISV_PROD_ID\n");
-            g_verify_isv_prod_id = false;
-        } else {
-            errno                = 0;
-            uint16_t isv_prod_id = (uint16_t)strtoul(argv[3], NULL, 10);
-            if (errno) {
-                mbedtls_printf("Cannot parse ISV_PROD_ID!\n");
-                return 1;
-            }
-            memcpy(g_expected_isv_prod_id, &isv_prod_id, sizeof(isv_prod_id));
-        }
-
-        if (!strcmp(argv[4], "0")) {
-            mbedtls_printf("  - ignoring ISV_SVN\n");
-            g_verify_isv_svn = false;
-        } else {
-            errno            = 0;
-            uint16_t isv_svn = (uint16_t)strtoul(argv[4], NULL, 10);
-            if (errno) {
-                mbedtls_printf("Cannot parse ISV_SVN\n");
-                return 1;
-            }
-            memcpy(g_expected_isv_svn, &isv_svn, sizeof(isv_svn));
-        }
-        if (ret == -ENOENT || !strcmp(attestation_type_str, "none")) {
-        ra_tls_attest_lib               = NULL;
-        ra_tls_create_key_and_crt_der_f = NULL;
-    } else if (!strcmp(attestation_type_str, "dcap")) {
-        ra_tls_attest_lib =
-            dlopen("libra_tls_attest.so", RTLD_LAZY);  // initializing the attestation lib
-        if (!ra_tls_attest_lib) {
-            mbedtls_printf("User requested RA-TLS attestation but cannot find lib\n");
-            return 1;
-        }
-
-        char* error;
-        ra_tls_create_key_and_crt_der_f = dlsym(ra_tls_attest_lib, "ra_tls_create_key_and_crt_der");
-        if ((error = dlerror()) != NULL) {
-            mbedtls_printf("%s\n", error);
-            return 1;
-        }
-    } else {
-        mbedtls_printf("Unrecognized remote attestation type: %s\n", attestation_type_str);
-        return 1;
-    }
-    if (ra_tls_verify_lib) {
-        mbedtls_printf(
-            "[ using default SGX-measurement verification callback"
-            " (via RA_TLS_* environment variables) ]\n");
-        (*ra_tls_set_measurement_callback_f)(NULL); /* just to test RA-TLS code */
-    } else {
-        mbedtls_printf("[ using normal TLS flows ]\n");
-    }
-
-     mbedtls_printf("\n  . Seeding the random number generator...");
+    mbedtls_printf("\n  . Seeding the random number generator...");
     fflush(stdout);
 
     ret = mbedtls_ctr_drbg_seed(&ctr_drbg, mbedtls_entropy_func, &entropy,

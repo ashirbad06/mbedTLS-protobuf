@@ -4,7 +4,7 @@
 export KII_TUPLES_PER_JOB="100000"
 export KII_SHARED_FOLDER="/kii"
 export KII_TUPLE_FILE="/kii/tuples"
-export KII_PLAYER_NUMBER="0"
+export KII_PLAYER_NUMBER="1"
 export KII_PLAYER_COUNT="2"
 export KII_JOB_ID="1920bb26-dsee-dzfw-vdsdsa14fds4"
 export KII_TUPLE_TYPE="BIT_GFP"
@@ -34,8 +34,8 @@ export RA_TLS_ALLOW_SW_HARDENING_NEEDED=1
 # Set required RA-TLS verification variables
 export RA_TLS_MRSIGNER="$mr_signer"  
 export RA_TLS_MRENCLAVE="$mr_enclave"            
-export RA_TLS_ISV_SVN = "any"
-export RA_TLS_ISV_PROD_ID = "any"
+export RA_TLS_ISV_SVN="any"
+export RA_TLS_ISV_PROD_ID="any"
 # Loop through each player number in sequence
 echo "Starting server for player $KII_PLAYER_NUMBER within the single SGX instance..."
 
